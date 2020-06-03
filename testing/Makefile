@@ -11,4 +11,7 @@ run:
 		-p 54321:54321 \
 		docker.elastic.co/logstash/logstash:7.7.1
 
-.phony: run
+test:
+	pytest -vv logstash_test.py
+
+.phony: run test
