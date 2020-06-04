@@ -1,0 +1,17 @@
+language: python
+
+services:
+  - docker
+
+python: 
+  - 3.6
+  
+before_install:
+  - rm -f conf.d/output-elasticsearch.conf
+  - DOCKER_RUN_FLAGS=--detach make -C testing run
+  - python -m pip install --upgrade pip
+  - python -m pip install --requirement testing/requirements.txt
+  - sleep 30
+
+script:
+  - make -C testing test
