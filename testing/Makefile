@@ -1,6 +1,9 @@
+DOCKER_RUN_FLAGS ?= -i
+PYTEST_FLAGS ?= -vv
+
 run:
 	mkdir -p logs
-	docker run --rm -it \
+	docker run --rm $(DOCKER_RUN_FLAGS) -t \
 		-v ${PWD}/logs:/var/log/logstash \
 		-v ${PWD}/../conf.d:/usr/share/logstash/pipeline/ \
 		-v ${PWD}/output-testing.conf:/usr/share/logstash/pipeline/output-elasticsearch.conf \
@@ -12,9 +15,6 @@ run:
 		docker.elastic.co/logstash/logstash:7.7.1
 
 test:
-	pytest -vv logstash_test.py
+	pytest $(PYTEST_FLAGS) logstash_test.py
 
-test_verbose:
-	pytest -vvs logstash_test.py
-
-.phony: run test test_verbose
+.phony: run test
