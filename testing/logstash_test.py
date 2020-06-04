@@ -1,3 +1,4 @@
+import contextlib
 import json
 import logging
 import pprint
@@ -5,13 +6,37 @@ import socket
 
 import pytest
 
+try:
+    import pcdsutils
+    import pcdsutils.log
+except ImportError:
+    pcdsutils = None
+
 
 logger = logging.getLogger(__name__)
+
 
 LOG_HOST = 'localhost'
 LOG_OUTPUT_SERVER = (LOG_HOST, 17771)
 udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 udp_sock.bind(('', 0))
+
+
+@contextlib.contextmanager
+def receive_from_logstash_output(max_length=8192):
+    class Result:
+        data = None
+
+    with socket.create_connection(LOG_OUTPUT_SERVER) as output_sock:
+        result = Result()
+        yield result
+        raw = output_sock.recv(max_length)
+
+    logger.debug('Received %s', raw)
+    result.data = json.loads(raw)
+    print('Received:')
+    pprint.pprint(result.data)
+
 
 def send_and_receive(port, protocol, message):
     """Send message to (LOG_HOST, port) via protocol; receive logstash JSON."""
@@ -20,8 +45,9 @@ def send_and_receive(port, protocol, message):
 
     payload = message.encode('utf-8')
     logger.debug('Sending %s', payload)
-    dest = (LOG_HOST, port)
-    with socket.create_connection(LOG_OUTPUT_SERVER) as output_sock:
+
+    with receive_from_logstash_output() as received:
+        dest = (LOG_HOST, port)
         if protocol == 'tcp':
             with socket.create_connection(dest) as log_sock:
                 log_sock.send(payload)
@@ -30,15 +56,20 @@ def send_and_receive(port, protocol, message):
         else:
             raise ValueError('Bad protocol')
 
-        raw = output_sock.recv(8192)
-        logger.debug('Received %s', raw)
-        json_dict = json.loads(raw)
-        print('Received:')
-        pprint.pprint(json_dict)
-        return json_dict
+    return received.data
+
+
+def log_and_receive(logger_func, *args, **kwargs):
+    """Record Logger message and receive logstash JSON."""
+    with receive_from_logstash_output() as received:
+        print('Calling', logger_func, 'with', args, kwargs)
+        logger_func(*args, **kwargs)
+
+    return received.data
 
 
 def dotted_getitem(d, key):
+    """Dotted getitem for dictionary `d` of `key`."""
     if '.' in key:
         key, remainder = key.split('.', 1)
         return dotted_getitem(d[key], remainder)
@@ -78,7 +109,7 @@ message_types = {
         protocol='udp',
         port=54321,
     ),
-    'python_json': dict(
+    'python_json_tcp': dict(
         protocol='tcp',
         port=54320,
     ),
@@ -168,19 +199,19 @@ tests = [
     # -- plc JSON tests --
     pytest.param(
         'plc_json',
-        '{"schema":"twincat-event-0","ts":1591288839.5965443,"plc":"PLC-LFE-VAC","severity":4,"id":0,"event_class":"97CF8247-B59C-4E2C-B4B0-7350D0471457","msg":"Critical (Pump time out.)","source":"plc_lfe_vac.plc_lfe_vac.GVL_Devices.IM1L0_XTES_PIP_01.fbLogger/Vacuum","event_type":3,"json":"{}"}',
+        '{"schema":"twincat-event-0","ts":1591288839.5965443,"plc":"PLC-LFE-VAC","severity":4,"id":0,"event_class":"97CF8247-B59C-4E2C-B4B0-7350D0471457","msg":"Critical (Pump time out.)","source":"plc_lfe_vac.plc_lfe_vac.GVL_Devices.IM1L0_XTES_PIP_01.fbLogger/Vacuum","event_type":3,"json":"{}"}',  # noqa
         {
             'log.event_class': '97CF8247-B59C-4E2C-B4B0-7350D0471457',
             'log.event_type': 3,
             'log.event_type_str': "message_sent",
-            'log.function_block': "plc_lfe_vac.plc_lfe_vac.GVL_Devices.IM1L0_XTES_PIP_01.fbLogger",
+            'log.function_block': "plc_lfe_vac.plc_lfe_vac.GVL_Devices.IM1L0_XTES_PIP_01.fbLogger",  # noqa
             'log.id': 0,
             'log.json': {},
             'log.msg': 'Critical (Pump time out.)',
             'log.plc': 'PLC-LFE-VAC',
             'log.schema': 'twincat-event-0',
             'log.severity': 4,
-            'log.source': "plc_lfe_vac.plc_lfe_vac.GVL_Devices.IM1L0_XTES_PIP_01.fbLogger/Vacuum",
+            'log.source': "plc_lfe_vac.plc_lfe_vac.GVL_Devices.IM1L0_XTES_PIP_01.fbLogger/Vacuum",  # noqa
             'log.subsystem': "Vacuum",
             'log.subsytem': "Vacuum",  # back-compat for typo
             'log.timestamp': "2020-06-04T16:40:39.596Z",
@@ -225,3 +256,32 @@ def test_should_fail(message_type, message, expected, exc_class):
 
     with pytest.raises(exc_class):
         check_vs_expected(expected, result)
+
+
+@pytest.mark.parametrize(
+    'python_message_type',
+    [pytest.param('python_json_tcp', marks=pytest.mark.skip),
+     pytest.param('python_json_udp'),
+     ]
+)
+def test_python_logging(python_message_type):
+    if pcdsutils is None:
+        pytest.skip('pcdsutils unavailable')
+
+    info = message_types[python_message_type]
+    pcdsutils.log.configure_pcds_logging(
+        log_host=LOG_HOST,
+        log_port=info['port'],
+        protocol=info['protocol'],
+    )
+
+    result = log_and_receive(pcdsutils.log.logger.error, 'logger warning')
+    pprint.pprint(result)
+
+    expected = {
+        'log.filename': 'logstash_test.py',
+        'log.schema': f'python-event-{pcdsutils.log._LOGGER_SCHEMA_VERSION}',
+        'log.msg': 'logger warning',
+        'log.versions.pcdsutils': pcdsutils.__version__,
+    }
+    check_vs_expected(expected, result)
