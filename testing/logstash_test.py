@@ -1,6 +1,7 @@
 import contextlib
 import json
 import logging
+import os
 import pprint
 import socket
 
@@ -16,8 +17,9 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-LOG_HOST = 'localhost'
-LOG_OUTPUT_SERVER = (LOG_HOST, 17771)
+LOG_HOST = os.environ.get('TEST_OUTPUT_HOST', 'localhost')
+LOG_OUTPUT_PORT = int(os.environ.get('TEST_OUTPUT_PORT', 17771))
+LOG_OUTPUT_SERVER = (LOG_HOST, LOG_OUTPUT_PORT)
 udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 udp_sock.bind(('', 0))
 
