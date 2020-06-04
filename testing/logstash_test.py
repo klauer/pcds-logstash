@@ -61,15 +61,31 @@ def check_vs_expected(expected, received):
         raise ValueError('\n'.join(errors))
 
 
-ports = {
-    'errlog': 7004,
-}
-
-protocols = {
-    'errlog': 'tcp',
+message_types = {
+    'errlog': dict(
+        protocol='tcp',
+        port=7004,
+    ),
+    'caputlog': dict(
+        protocol='tcp',
+        port=7011,
+    ),
+    'plc_json': dict(
+        protocol='udp',
+        port=54321,
+    ),
+    'python_json': dict(
+        protocol='tcp',
+        port=54320,
+    ),
+    'python_json_udp': dict(
+        protocol='udp',
+        port=54320,
+    ),
 }
 
 tests = [
+    # -- error log tests --
     pytest.param(
         'errlog',
         'IOC=VonHamos01 sevr=major error log! IOC startup',
@@ -81,24 +97,43 @@ tests = [
         id='basic errlog',
     ),
 
+    # -- caputlog tests --
+
+
+]
+
+fail_tests = [
+    # -- verifying check_vs_expected --
     pytest.param(
         'errlog',
         'IOC=VonHamos01 sevr=major error log! IOC startup',
         {'log.MISSING_KEY': 'VonHamos01'},
+        ValueError,
         id='missing_key',
-        marks=pytest.mark.xfail
     ),
 
     pytest.param(
         'errlog',
         'IOC=VonHamos01 sevr=major error log! IOC startup',
         {'log.iocname': 'BAD_VALUE'},
+        ValueError,
         id='bad_value',
-        marks=pytest.mark.xfail
     ),
 ]
 
+
 @pytest.mark.parametrize('message_type, message, expected', tests)
 def test_all(message_type, message, expected):
-    result = send_and_receive(ports['errlog'], protocols['errlog'], message)
+    info = message_types[message_type]
+    result = send_and_receive(info['port'], info['protocol'], message)
     check_vs_expected(expected, result)
+
+
+@pytest.mark.parametrize('message_type, message, expected, exc_class',
+                         fail_tests)
+def test_should_fail(message_type, message, expected, exc_class):
+    info = message_types[message_type]
+    result = send_and_receive(info['port'], info['protocol'], message)
+
+    with pytest.raises(exc_class):
+        check_vs_expected(expected, result)
