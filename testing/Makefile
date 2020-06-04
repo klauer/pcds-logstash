@@ -14,4 +14,7 @@ run:
 test:
 	pytest -vv logstash_test.py
 
-.phony: run test
+test_verbose:
+	pytest -vvs logstash_test.py
+
+.phony: run test test_verbose

@@ -102,6 +102,24 @@ tests = [
     ),
 
     # -- caputlog tests --
+    pytest.param(
+        'caputlog',
+        ('IOC=VonHamos01 03-Jun-20 17:03:29 ctl-logdev01 klauer '
+         'CAPUTLOGTEST:VALUE new=0 old=1 min=0 max=1'),
+        {
+            'log.iocname': 'VonHamos01',
+            'log.pvname': 'CAPUTLOGTEST:VALUE',
+            'log.new_value': '0',
+            'log.old_value': '1',
+            'log.min_value': '0',
+            'log.max_value': '1',
+            'log.client_username': 'klauer',
+            'log.client_hostname': 'ctl-logdev01',
+            'log.timestamp': '2020-06-03T17:03:29.000Z',
+
+        },
+        id='caputlog_basic',
+    ),
 
     # -- plc JSON tests --
     pytest.param(
