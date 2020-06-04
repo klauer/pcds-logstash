@@ -98,7 +98,18 @@ tests = [
             'log.severity': 'major',
             'log.message': 'error log! IOC startup',
          },
-        id='basic errlog',
+        id='errlog-major',
+    ),
+
+    pytest.param(
+        'errlog',
+        'IOC=VonHamos01 sevr=fatal fatal error message',
+        {
+            'log.iocname': 'VonHamos01',
+            'log.severity': 'fatal',
+            'log.message': 'fatal error message',
+         },
+        id='errlog-fatal',
     ),
 
     # -- caputlog tests --
