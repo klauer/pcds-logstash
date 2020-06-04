@@ -1,5 +1,6 @@
 import json
 import logging
+import pprint
 import socket
 
 import pytest
@@ -10,11 +11,11 @@ logger = logging.getLogger(__name__)
 LOG_HOST = 'localhost'
 LOG_OUTPUT_SERVER = (LOG_HOST, 17771)
 udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
+udp_sock.bind(('', 0))
 
 def send_and_receive(port, protocol, message):
     """Send message to (LOG_HOST, port) via protocol; receive logstash JSON."""
-    if not message.endswith('\n'):
+    if protocol == 'tcp' and not message.endswith('\n'):
         message = f'{message}\n'
 
     payload = message.encode('utf-8')
@@ -31,7 +32,10 @@ def send_and_receive(port, protocol, message):
 
         raw = output_sock.recv(8192)
         logger.debug('Received %s', raw)
-        return json.loads(raw)
+        json_dict = json.loads(raw)
+        print('Received:')
+        pprint.pprint(json_dict)
+        return json_dict
 
 
 def dotted_getitem(d, key):
@@ -58,7 +62,7 @@ def check_vs_expected(expected, received):
                 errors.append(f'Bad value for key {key!r}: {ex}')
 
     if errors:
-        raise ValueError('\n'.join(errors))
+        raise ValueError('\n' + '\n\n'.join(errors))
 
 
 message_types = {
@@ -99,6 +103,28 @@ tests = [
 
     # -- caputlog tests --
 
+    # -- plc JSON tests --
+    pytest.param(
+        'plc_json',
+        '{"schema":"twincat-event-0","ts":1591288839.5965443,"plc":"PLC-LFE-VAC","severity":4,"id":0,"event_class":"97CF8247-B59C-4E2C-B4B0-7350D0471457","msg":"Critical (Pump time out.)","source":"plc_lfe_vac.plc_lfe_vac.GVL_Devices.IM1L0_XTES_PIP_01.fbLogger/Vacuum","event_type":3,"json":"{}"}',
+        {
+            'log.event_class': '97CF8247-B59C-4E2C-B4B0-7350D0471457',
+            'log.event_type': 3,
+            'log.event_type_str': "message_sent",
+            'log.function_block': "plc_lfe_vac.plc_lfe_vac.GVL_Devices.IM1L0_XTES_PIP_01.fbLogger",
+            'log.id': 0,
+            'log.json': {},
+            'log.msg': 'Critical (Pump time out.)',
+            'log.plc': 'PLC-LFE-VAC',
+            'log.schema': 'twincat-event-0',
+            'log.severity': 4,
+            'log.source': "plc_lfe_vac.plc_lfe_vac.GVL_Devices.IM1L0_XTES_PIP_01.fbLogger/Vacuum",
+            'log.subsystem': "Vacuum",
+            'log.subsytem': "Vacuum",  # back-compat for typo
+            'log.timestamp': "2020-06-04T16:40:39.596Z",
+        },
+        id='plc_vacuum',
+    ),
 
 ]
 
