@@ -1,3 +1,4 @@
 *.sw[op]
 testing/logs
 __pycache__
+.test_config
