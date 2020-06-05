@@ -36,7 +36,6 @@ run: build_config
 	# -p $(TEST_OUTPUT_HOST):$(PYTHON_PORT):$(PYTHON_PORT)/tcp
 
 test:
-	TEST_OUTPUT_PORT=$(TEST_OUTPUT_PORT) python -m pytest \
-		$(PYTEST_FLAGS) logstash_test.py
+	python -m pytest $(PYTEST_FLAGS) logstash_test.py
 
 .PHONY: run test build_config
