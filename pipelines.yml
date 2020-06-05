@@ -1,6 +1,11 @@
-# This file is where you define your pipelines. You can define multiple.
-# For more information on multiple pipelines, see the documentation:
+# Mltiple pipelines documentation:
 #   https://www.elastic.co/guide/en/logstash/current/multiple-pipelines.html
 
-- pipeline.id: main
-  path.config: "/etc/logstash/conf.d/*.conf"
+- pipeline.id: python
+  path.config: "/etc/logstash/conf.d/python/*.conf"
+- pipeline.id: plc
+  path.config: "/etc/logstash/conf.d/plc/*.conf"
+- pipeline.id: epics_errlog
+  path.config: "/etc/logstash/conf.d/epics_errlog/*.conf"
+- pipeline.id: epics_caputlog
+  path.config: "/etc/logstash/conf.d/caputlog/*.conf"
