@@ -13,10 +13,10 @@ run:
 	mkdir -p logs
 	docker run --rm $(DOCKER_RUN_FLAGS) -t \
 		\
-		-v ${PWD}/logs:/var/log/logstash \
-		-v ${PCDS_LOGSTASH_ROOT}/pipelines.yml:/usr/share/logstash/pipelines.yml \
+		-v ${PCDS_LOGSTASH_ROOT}/testing/logs:/var/log/logstash \
+		-v ${PCDS_LOGSTASH_ROOT}/pipelines.yml:/usr/share/logstash/config/pipelines.yml \
 		-v ${PCDS_LOGSTASH_ROOT}/conf.d:/etc/logstash/conf.d \
-		-v ${PWD}/output-testing.conf:/etc/logstash/conf.d/output-elasticsearch.conf \
+		-v ${PCDS_LOGSTASH_ROOT}/testing/output-testing.conf:/etc/logstash/conf.d/output-elasticsearch.conf \
 		\
 		-p $(TEST_OUTPUT_HOST):$(TEST_OUTPUT_PORT):$(TEST_OUTPUT_PORT)/tcp \
 		-p $(TEST_OUTPUT_HOST):$(ERRLOG_PORT):$(ERRLOG_PORT)/tcp \
