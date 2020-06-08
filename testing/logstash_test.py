@@ -18,18 +18,16 @@ logger = logging.getLogger(__name__)
 
 
 LOG_HOST = os.environ.get('TEST_OUTPUT_HOST', 'localhost')
-LOG_OUTPUT_PORT = int(os.environ.get('TEST_OUTPUT_PORT', 17771))
-LOG_OUTPUT_SERVER = (LOG_HOST, LOG_OUTPUT_PORT)
 udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 udp_sock.bind(('', 0))
 
 
 @contextlib.contextmanager
-def receive_from_logstash_output(max_length=8192):
+def receive_from_logstash_output(port, max_length=8192):
     class Result:
         data = None
 
-    with socket.create_connection(LOG_OUTPUT_SERVER) as output_sock:
+    with socket.create_connection((LOG_HOST, port)) as output_sock:
         result = Result()
         yield result
         raw = output_sock.recv(max_length)
@@ -40,7 +38,7 @@ def receive_from_logstash_output(max_length=8192):
     pprint.pprint(result.data)
 
 
-def send_and_receive(port, protocol, message):
+def send_and_receive(port, receive_port, protocol, message):
     """Send message to (LOG_HOST, port) via protocol; receive logstash JSON."""
     if protocol == 'tcp' and not message.endswith('\n'):
         message = f'{message}\n'
@@ -48,7 +46,7 @@ def send_and_receive(port, protocol, message):
     payload = message.encode('utf-8')
     logger.debug('Sending %s', payload)
 
-    with receive_from_logstash_output() as received:
+    with receive_from_logstash_output(receive_port) as received:
         dest = (LOG_HOST, port)
         if protocol == 'tcp':
             with socket.create_connection(dest) as log_sock:
@@ -61,9 +59,9 @@ def send_and_receive(port, protocol, message):
     return received.data
 
 
-def log_and_receive(logger_func, *args, **kwargs):
+def log_and_receive(receive_port, logger_func, *args, **kwargs):
     """Record Logger message and receive logstash JSON."""
-    with receive_from_logstash_output() as received:
+    with receive_from_logstash_output(receive_port) as received:
         print('Calling', logger_func, 'with', args, kwargs)
         logger_func(*args, **kwargs)
 
@@ -99,50 +97,55 @@ def check_vs_expected(expected, received):
 
 
 message_types = {
-    'errlog': dict(
+    'epics_errlog': dict(
         protocol='tcp',
         port=7004,
+        receive_port=17771,
     ),
     'caputlog': dict(
         protocol='tcp',
         port=7011,
+        receive_port=17772,
     ),
-    'plc_json': dict(
+    'plc': dict(
         protocol='udp',
         port=54321,
+        receive_port=17773,
     ),
     'python_json_tcp': dict(
         protocol='tcp',
         port=54320,
+        receive_port=17774,
     ),
     'python_json_udp': dict(
         protocol='udp',
         port=54320,
+        receive_port=17774,
     ),
 }
 
 tests = [
     # -- error log tests --
     pytest.param(
-        'errlog',
+        'epics_errlog',
         'IOC=VonHamos01 sevr=major error log! IOC startup',
         {
             'log.iocname': 'VonHamos01',
             'log.severity': 'major',
             'log.message': 'error log! IOC startup',
          },
-        id='errlog-major',
+        id='epics_errlog-major',
     ),
 
     pytest.param(
-        'errlog',
+        'epics_errlog',
         'IOC=VonHamos01 sevr=fatal fatal error message',
         {
             'log.iocname': 'VonHamos01',
             'log.severity': 'fatal',
             'log.message': 'fatal error message',
          },
-        id='errlog-fatal',
+        id='epics_errlog-fatal',
     ),
 
     # -- caputlog tests --
@@ -200,7 +203,7 @@ tests = [
 
     # -- plc JSON tests --
     pytest.param(
-        'plc_json',
+        'plc',
         '{"schema":"twincat-event-0","ts":1591288839.5965443,"plc":"PLC-LFE-VAC","severity":4,"id":0,"event_class":"97CF8247-B59C-4E2C-B4B0-7350D0471457","msg":"Critical (Pump time out.)","source":"plc_lfe_vac.plc_lfe_vac.GVL_Devices.IM1L0_XTES_PIP_01.fbLogger/Vacuum","event_type":3,"json":"{}"}',  # noqa
         {
             'log.event_class': '97CF8247-B59C-4E2C-B4B0-7350D0471457',
@@ -226,7 +229,7 @@ tests = [
 fail_tests = [
     # -- verifying check_vs_expected --
     pytest.param(
-        'errlog',
+        'epics_errlog',
         'IOC=VonHamos01 sevr=major error log! IOC startup',
         {'log.MISSING_KEY': 'VonHamos01'},
         ValueError,
@@ -234,7 +237,7 @@ fail_tests = [
     ),
 
     pytest.param(
-        'errlog',
+        'epics_errlog',
         'IOC=VonHamos01 sevr=major error log! IOC startup',
         {'log.iocname': 'BAD_VALUE'},
         ValueError,
@@ -243,18 +246,26 @@ fail_tests = [
 ]
 
 
+def check_timestamp(result):
+    assert 'log' in result
+    assert 'timestamp' in result['log']
+
+
 @pytest.mark.parametrize('message_type, message, expected', tests)
 def test_all(message_type, message, expected):
     info = message_types[message_type]
-    result = send_and_receive(info['port'], info['protocol'], message)
+    result = send_and_receive(info['port'], info['receive_port'],
+                              info['protocol'], message)
     check_vs_expected(expected, result)
+    check_timestamp(result)
 
 
 @pytest.mark.parametrize('message_type, message, expected, exc_class',
                          fail_tests)
 def test_should_fail(message_type, message, expected, exc_class):
     info = message_types[message_type]
-    result = send_and_receive(info['port'], info['protocol'], message)
+    result = send_and_receive(info['port'], info['receive_port'],
+                              info['protocol'], message)
 
     with pytest.raises(exc_class):
         check_vs_expected(expected, result)
@@ -277,7 +288,8 @@ def test_python_logging(python_message_type):
         protocol=info['protocol'],
     )
 
-    result = log_and_receive(pcdsutils.log.logger.error, 'logger warning')
+    result = log_and_receive(info['receive_port'], pcdsutils.log.logger.error,
+                             'logger warning')
     pprint.pprint(result)
 
     expected = {
@@ -287,3 +299,4 @@ def test_python_logging(python_message_type):
         'log.versions.pcdsutils': pcdsutils.__version__,
     }
     check_vs_expected(expected, result)
+    check_timestamp(result)
