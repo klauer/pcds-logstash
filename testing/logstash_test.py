@@ -246,12 +246,18 @@ fail_tests = [
 ]
 
 
+def check_timestamp(result):
+    assert 'log' in result
+    assert 'timestamp' in result['log']
+
+
 @pytest.mark.parametrize('message_type, message, expected', tests)
 def test_all(message_type, message, expected):
     info = message_types[message_type]
     result = send_and_receive(info['port'], info['receive_port'],
                               info['protocol'], message)
     check_vs_expected(expected, result)
+    check_timestamp(result)
 
 
 @pytest.mark.parametrize('message_type, message, expected, exc_class',
@@ -293,3 +299,4 @@ def test_python_logging(python_message_type):
         'log.versions.pcdsutils': pcdsutils.__version__,
     }
     check_vs_expected(expected, result)
+    check_timestamp(result)
