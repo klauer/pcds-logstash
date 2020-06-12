@@ -21,4 +21,4 @@ Schema / Indices
 | PLC      | twincat-event-*  |  twincat-event-0   |
 | Python   | python-event-*   |  python-event-0    |
 | caPutLog | caputlog-event-* |  caputlog-event-0  |
-| caPutLog | caputlog-event-* |  caputlog-event-0  |
+| errLog   | errlog-event-*   |  errlog-event-0    |
