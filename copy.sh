@@ -1,2 +1,2 @@
 cp /etc/logstash/* .
-cp /etc/logstash/conf.d/* conf.d/
+cp -r /etc/logstash/conf.d/* conf.d/
