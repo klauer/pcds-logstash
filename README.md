@@ -12,3 +12,13 @@ Testing
 =======
 
 See [testing/](testing/README.md).
+
+Schema / Indices
+================
+
+| Source   | Index Glob       | Schema example     |
+|----------|------------------|--------------------|
+| PLC      | twincat-event-*  |  twincat-event-0   |
+| Python   | python-event-*   |  python-event-0    |
+| caPutLog | caputlog-event-* |  caputlog-event-0  |
+| caPutLog | caputlog-event-* |  caputlog-event-0  |
