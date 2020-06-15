@@ -38,23 +38,36 @@ def receive_from_logstash_output(port, max_length=8192):
     pprint.pprint(result.data)
 
 
-def send_and_receive(port, receive_port, protocol, message):
-    """Send message to (LOG_HOST, port) via protocol; receive logstash JSON."""
+def send_message(port, protocol, message):
+    """Send message to (LOG_HOST, port) via `protocol`."""
+    if protocol not in ('tcp', 'udp'):
+        raise ValueError('Bad protocol')
+
     if protocol == 'tcp' and not message.endswith('\n'):
         message = f'{message}\n'
 
     payload = message.encode('utf-8')
     logger.debug('Sending %s', payload)
 
+    dest = (LOG_HOST, port)
+    if protocol == 'tcp':
+        with socket.create_connection(dest) as log_sock:
+            log_sock.send(payload)
+    elif protocol == 'udp':
+        udp_sock.sendto(payload, dest)
+
+
+def send_by_type(message_type, message):
+    """Send a message given the message type and message itself."""
+    info = message_types[message_type]
+    port = info['port']
+    protocol = info['protocol']
+    return send_message(port, protocol, message)
+
+def send_and_receive(port, receive_port, protocol, message):
+    """Send message to (LOG_HOST, port) via protocol; receive logstash JSON."""
     with receive_from_logstash_output(receive_port) as received:
-        dest = (LOG_HOST, port)
-        if protocol == 'tcp':
-            with socket.create_connection(dest) as log_sock:
-                log_sock.send(payload)
-        elif protocol == 'udp':
-            udp_sock.sendto(payload, dest)
-        else:
-            raise ValueError('Bad protocol')
+        send_message(port, protocol, message)
 
     return received.data
 
