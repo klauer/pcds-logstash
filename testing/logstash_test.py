@@ -74,9 +74,9 @@ def send_and_receive(port, receive_port, protocol, message):
 
 def log_and_receive(receive_port, logger_func, *args, **kwargs):
     """Record Logger message and receive logstash JSON."""
-    with receive_from_logstash_output(receive_port) as received:
-        print('Calling', logger_func, 'with', args, kwargs)
-        logger_func(*args, **kwargs)
+    # with receive_from_logstash_output(receive_port) as received:
+    print('Calling', logger_func, 'with', args, kwargs)
+    logger_func(*args, **kwargs)
 
     return received.data
 
@@ -310,6 +310,44 @@ def test_python_logging(python_message_type):
         'log.filename': 'logstash_test.py',
         'log.schema': f'python-event-{pcdsutils.log._LOGGER_SCHEMA_VERSION}',
         'log.msg': 'logger warning',
+        'log.versions.pcdsutils': pcdsutils.__version__,
+    }
+    check_vs_expected(expected, result)
+    check_timestamp(result)
+
+
+@pytest.mark.parametrize(
+    'python_message_type',
+    [pytest.param('python_json_tcp', marks=pytest.mark.skip),
+     pytest.param('python_json_udp'),
+     ]
+)
+def test_python_logging_exceptions(python_message_type):
+    if pcdsutils is None:
+        pytest.skip('pcdsutils unavailable')
+
+    info = message_types[python_message_type]
+    pcdsutils.log.configure_pcds_logging(
+        log_host=LOG_HOST,
+        log_port=info['port'],
+        protocol=info['protocol'],
+    )
+
+    def log_func():
+        try:
+            raise Exception('this is a an exception from the test suite')
+        except Exception:
+            pcdsutils.log.logger.exception('Caught an exception')
+        import time
+        time.sleep(10)
+
+    result = log_and_receive(info['receive_port'], log_func)
+    pprint.pprint(result)
+
+    expected = {
+        'log.filename': 'logstash_test.py',
+        'log.schema': f'python-event-{pcdsutils.log._LOGGER_SCHEMA_VERSION}',
+        'log.msg': 'Caught an exception',
         'log.versions.pcdsutils': pcdsutils.__version__,
     }
     check_vs_expected(expected, result)
