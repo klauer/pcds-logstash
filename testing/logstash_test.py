@@ -122,7 +122,8 @@ message_types = {
     ),
     'plc': dict(
         protocol='udp',
-        port=54321,
+        # port=54321,  # <-- NOTE: this goes to the UDP tee process (on prod)
+        port=54322,  # <-- NOTE: this goes directly to logstash
         receive_port=17773,
     ),
     'python_json_tcp': dict(
