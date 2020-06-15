@@ -12,8 +12,8 @@ twincat_now = time.time()
 test_messages = {
     'epics_errlog': 'IOC=LogTest sevr=major ** log system test message **',
     'caputlog': (f'IOC=LogTest {caputlog_now} ctl-logdev01 klauer '
-                 'CAPUTLOGTEST:VALUE new=0 old=1 min=0 max=1')
-    'plc': (f'{"schema":"twincat-event-0","ts":{twincat_now},"plc":"LogTest",'
+                 'CAPUTLOGTEST:VALUE new=0 old=1 min=0 max=1'),
+    'plc': (f'{{"schema":"twincat-event-0","ts":{twincat_now},"plc":"LogTest",'
             '"severity":4,"id":0,'
             '"event_class":"C0FFEEC0-FFEE-COFF-EECO-FFEEC0FFEEC0",'
             '"msg":"Critical (Log system test.)",'
