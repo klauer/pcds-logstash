@@ -38,32 +38,45 @@ def receive_from_logstash_output(port, max_length=8192):
     pprint.pprint(result.data)
 
 
-def send_and_receive(port, receive_port, protocol, message):
-    """Send message to (LOG_HOST, port) via protocol; receive logstash JSON."""
+def send_message(port, protocol, message):
+    """Send message to (LOG_HOST, port) via `protocol`."""
+    if protocol not in ('tcp', 'udp'):
+        raise ValueError('Bad protocol')
+
     if protocol == 'tcp' and not message.endswith('\n'):
         message = f'{message}\n'
 
     payload = message.encode('utf-8')
     logger.debug('Sending %s', payload)
 
+    dest = (LOG_HOST, port)
+    if protocol == 'tcp':
+        with socket.create_connection(dest) as log_sock:
+            log_sock.send(payload)
+    elif protocol == 'udp':
+        udp_sock.sendto(payload, dest)
+
+
+def send_by_type(message_type, message):
+    """Send a message given the message type and message itself."""
+    info = message_types[message_type]
+    port = info['port']
+    protocol = info['protocol']
+    return send_message(port, protocol, message)
+
+def send_and_receive(port, receive_port, protocol, message):
+    """Send message to (LOG_HOST, port) via protocol; receive logstash JSON."""
     with receive_from_logstash_output(receive_port) as received:
-        dest = (LOG_HOST, port)
-        if protocol == 'tcp':
-            with socket.create_connection(dest) as log_sock:
-                log_sock.send(payload)
-        elif protocol == 'udp':
-            udp_sock.sendto(payload, dest)
-        else:
-            raise ValueError('Bad protocol')
+        send_message(port, protocol, message)
 
     return received.data
 
 
 def log_and_receive(receive_port, logger_func, *args, **kwargs):
     """Record Logger message and receive logstash JSON."""
-    with receive_from_logstash_output(receive_port) as received:
-        print('Calling', logger_func, 'with', args, kwargs)
-        logger_func(*args, **kwargs)
+    # with receive_from_logstash_output(receive_port) as received:
+    print('Calling', logger_func, 'with', args, kwargs)
+    logger_func(*args, **kwargs)
 
     return received.data
 
@@ -109,7 +122,8 @@ message_types = {
     ),
     'plc': dict(
         protocol='udp',
-        port=54321,
+        # port=54321,  # <-- NOTE: this goes to the UDP tee process (on prod)
+        port=54322,  # <-- NOTE: this goes directly to logstash
         receive_port=17773,
     ),
     'python_json_tcp': dict(
@@ -296,6 +310,44 @@ def test_python_logging(python_message_type):
         'log.filename': 'logstash_test.py',
         'log.schema': f'python-event-{pcdsutils.log._LOGGER_SCHEMA_VERSION}',
         'log.msg': 'logger warning',
+        'log.versions.pcdsutils': pcdsutils.__version__,
+    }
+    check_vs_expected(expected, result)
+    check_timestamp(result)
+
+
+@pytest.mark.parametrize(
+    'python_message_type',
+    [pytest.param('python_json_tcp', marks=pytest.mark.skip),
+     pytest.param('python_json_udp'),
+     ]
+)
+def test_python_logging_exceptions(python_message_type):
+    if pcdsutils is None:
+        pytest.skip('pcdsutils unavailable')
+
+    info = message_types[python_message_type]
+    pcdsutils.log.configure_pcds_logging(
+        log_host=LOG_HOST,
+        log_port=info['port'],
+        protocol=info['protocol'],
+    )
+
+    def log_func():
+        try:
+            raise Exception('this is a an exception from the test suite')
+        except Exception:
+            pcdsutils.log.logger.exception('Caught an exception')
+        import time
+        time.sleep(10)
+
+    result = log_and_receive(info['receive_port'], log_func)
+    pprint.pprint(result)
+
+    expected = {
+        'log.filename': 'logstash_test.py',
+        'log.schema': f'python-event-{pcdsutils.log._LOGGER_SCHEMA_VERSION}',
+        'log.msg': 'Caught an exception',
         'log.versions.pcdsutils': pcdsutils.__version__,
     }
     check_vs_expected(expected, result)
