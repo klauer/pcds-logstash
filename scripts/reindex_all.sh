@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "Reindexing TwinCAT events..."
-. reindex.sh "^logstash-twincat-event-0-2.*" "logstash-twincat-event-0"
+. reindex.sh "^logstash-twincat-event-0-2.*" "twincat-event-0"
 echo "Reindexing EPICS caPutLog events..."
 . reindex.sh "^caputlog-event-0-2.*" "caputlog-event-0"
 echo "Reindexing EPICS errlog events..."
