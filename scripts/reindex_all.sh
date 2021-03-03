@@ -9,7 +9,7 @@ echo "Reindexing EPICS errlog events..."
 
 echo "Reindexing archiver appliance statistics..."
 # This one's a mess (sorry!)
-. reindex.sh "^archiver_appliance_metrics_.*" "archiver-appliance-metrics" \
+. reindex.sh "^archiver_appliance_metrics_.*" "archiver-appliance-stats" \
     "ctx._source.remove('lts_time_copy_data_into_store_percent'); \
     ctx._source.remove('lts_time_copy_data_into_store'); \
     ctx._source.remove('mts_time_copy_data_into_store_percent'); \

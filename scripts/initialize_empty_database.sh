@@ -2,7 +2,7 @@
 
 set -x
 
-all_indices="logstash-twincat-event-0 caputlog-event-0 errlog-event-0 archiver-appliance-metrics python-event-0"
+all_indices="logstash-twincat-event-0 caputlog-event-0 errlog-event-0 archiver-appliance-stats python-event-0"
 
 for idx in ${all_indices}; do
     echo "Initializing index: ${idx}"
