@@ -21,4 +21,11 @@ export -f rollover
 
 alias_list=$(curl -s -XGET "$ES/_cat/aliases" | cut -d' ' -f1 | grep -v ".kibana")
 
-parallel rollover ::: $alias_list
+if command -v parallel 2>/dev/null; then
+    parallel rollover ::: $alias_list
+else
+    for alias in $alias_list; do
+        echo "Rolling over $alias...";
+        rollover $alias;
+    done
+fi
