@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-ES="localhost:9200"
+export ES="localhost:9200"
 
 rollover() {
   local target_idx="$1";
