@@ -22,3 +22,11 @@ Schema / Indices
 | Python   | python-event-*   |  python-event-0    |
 | caPutLog | caputlog-event-* |  caputlog-event-0  |
 | errLog   | errlog-event-*   |  errlog-event-0    |
+
+Data Retention Policy
+=====================
+
+| Server      | Retention Duration |
+| ----------- | ------------------ |
+| Production  | 1 year             |
+| Development | 30 days            |
