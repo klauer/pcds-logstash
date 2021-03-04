@@ -15,7 +15,11 @@ echo "Reindexing archiver appliance statistics..."
     ctx._source.remove('mts_time_copy_data_into_store_percent'); \
     ctx._source.remove('mts_time_copy_data_into_store'); \
     ctx._source.remove('sts_time_copy_data_into_store_percent'); \
-    ctx._source.remove('sts_time_copy_data_into_store'); "
+    ctx._source.remove('sts_time_copy_data_into_store'); \
+    ctx._source.remove('aggregated_appliance_event_rate_in_events_per_sec'); \
+    ctx._source.remove('benchmark_writing_at_mb_per_sec'); \
+    ctx._source.remove('data_rate_in_gb_per_year'); \
+    "
 
 echo "Reindexing Python events..."
 . reindex.sh "^python-event-0-2.*" "python-event-0"
