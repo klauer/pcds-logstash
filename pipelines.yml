@@ -10,5 +10,8 @@
 - pipeline.id: epics_errlog
   path.config: "/etc/logstash/conf.d/epics_errlog/*.conf"
 
+- pipeline.id: epics_logfiles
+  path.config: "/etc/logstash/conf.d/epics_logfiles/*.conf"
+
 - pipeline.id: epics_caputlog
   path.config: "/etc/logstash/conf.d/caputlog/*.conf"
