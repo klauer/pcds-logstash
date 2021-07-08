@@ -80,9 +80,9 @@ def send_and_receive(port, receive_port, protocol, message):
 
 def log_and_receive(receive_port, logger_func, *args, **kwargs):
     """Record Logger message and receive logstash JSON."""
-    # with receive_from_logstash_output(receive_port) as received:
-    print('Calling', logger_func, 'with', args, kwargs)
-    logger_func(*args, **kwargs)
+    with receive_from_logstash_output(receive_port) as received:
+        print('Calling', logger_func, 'with', args, kwargs)
+        logger_func(*args, **kwargs)
 
     return received.data
 
@@ -310,7 +310,7 @@ def test_should_fail(message_type, message, expected, exc_class):
 
 @pytest.mark.parametrize(
     'python_message_type',
-    [pytest.param('python_json_tcp', marks=pytest.mark.skip),
+    [pytest.param('python_json_tcp'),
      pytest.param('python_json_udp'),
      ]
 )
@@ -341,7 +341,7 @@ def test_python_logging(python_message_type):
 
 @pytest.mark.parametrize(
     'python_message_type',
-    [pytest.param('python_json_tcp', marks=pytest.mark.skip),
+    [pytest.param('python_json_tcp'),
      pytest.param('python_json_udp'),
      ]
 )
