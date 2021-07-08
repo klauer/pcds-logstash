@@ -6,13 +6,16 @@ services:
 python: 
   - 3.6
   
-before_install:
+script:
   - cd testing/
   - DOCKER_RUN_FLAGS=--detach make run
   - python -m pip install --upgrade pip
   - python -m pip install --requirement requirements.txt
-  - sleep 30
 
-script: 
-  - cd testing/
+  - docker ps
+  - /sbin/ifconfig
+
+  # ... but also wait for logstash to get started. It's slow.
+  - timeout 200 docker logs -f $(docker ps -q) || echo "\n\nOK, hopefully it's ready..."
+
   - make test

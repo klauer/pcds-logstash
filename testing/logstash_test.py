@@ -33,7 +33,12 @@ def receive_from_logstash_output(port, max_length=8192):
         raw = output_sock.recv(max_length)
 
     logger.debug('Received %s', raw)
-    result.data = json.loads(raw)
+    try:
+        result.data = json.loads(raw)
+    except json.JSONDecodeError:
+        raise RuntimeError(
+            f"Did not receive valid JSON from logstash: {raw}"
+        )
     print('Received:')
     pprint.pprint(result.data)
 
@@ -63,6 +68,7 @@ def send_by_type(message_type, message):
     port = info['port']
     protocol = info['protocol']
     return send_message(port, protocol, message)
+
 
 def send_and_receive(port, receive_port, protocol, message):
     """Send message to (LOG_HOST, port) via protocol; receive logstash JSON."""
@@ -213,6 +219,23 @@ tests = [
 
         },
         id='caputlog_no_minmax_no_ioc',
+    ),
+
+    pytest.param(
+        'caputlog',
+        ('IOC=ioc-tc-mot-example 07-Jul-21 10:10:37 pscag06 root '
+         'PLC:TST:MOT:SIM:01.SET new=Use old=Set'),
+        {
+            'log.iocname': 'ioc-tc-mot-example',
+            'log.pvname': 'PLC:TST:MOT:SIM:01.SET',
+            'log.new_value': 'Use',
+            'log.old_value': 'Set',
+            'log.client_username': 'root',
+            'log.client_hostname': 'pscag06',
+            'log.timestamp': '2021-07-07T10:10:37.000Z',
+
+        },
+        id='caputlog_enum',
     ),
 
     # -- plc JSON tests --
