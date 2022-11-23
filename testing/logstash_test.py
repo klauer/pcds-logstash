@@ -142,6 +142,11 @@ message_types = {
         port=54320,
         receive_port=17774,
     ),
+    'gateway_caputlog': dict(
+        protocol='tcp',
+        port=54330,
+        receive_port=17775,
+    ),
 }
 
 tests = [
