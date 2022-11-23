@@ -16,6 +16,10 @@ script:
   - /sbin/ifconfig
 
   # ... but also wait for logstash to get started. It's slow.
-  - timeout 200 docker logs -f $(docker ps -q) || echo "\n\nOK, hopefully it's ready..."
+  - docker logs -f $(docker ps -q)
+  - until nc -w 5 localhost 7011; do echo "Port not yet open"; sleep 1; done
+  - echo "caPutLog port open; logstash appears ready."; sleep 2
+  - timeout 100 make test
 
-  - make test
+after_failure:
+  - tail -n 100 logs/*.log
