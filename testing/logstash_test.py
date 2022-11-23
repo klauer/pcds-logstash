@@ -118,8 +118,8 @@ def check_vs_expected(expected, received):
 message_types = {
     'epics_errlog': dict(
         protocol='tcp',
-        port=7004,
-        receive_port=17771,
+        port=7004,            # <-- this is the port logstash expects errlog on
+        receive_port=17771,   # <-- this is the port we configure logstash to send us info
     ),
     'caputlog': dict(
         protocol='tcp',
@@ -144,8 +144,8 @@ message_types = {
     ),
     'gateway_caputlog': dict(
         protocol='tcp',
-        port=54330,
-        receive_port=17775,
+        port=17775,
+        receive_port=17776,
     ),
 }
 
@@ -264,6 +264,22 @@ tests = [
             'log.timestamp': "2020-06-04T16:40:39.596Z",
         },
         id='plc_vacuum',
+    ),
+
+    # -- gateway caputlog tests --
+    pytest.param(
+        'gateway_caputlog',
+        'Nov 02 23:20:46 physics@opi15 XCS:USER:MCC:EPHOT:SET1 7351 old=7350',
+        {
+            'log.timestamp': '2022-11-02T23:20:46.000Z',  # 'Nov 02 23:20:46',
+            'log.client_username': 'physics',
+            'log.client_hostname': 'opi15',
+            'log.pvname': 'XCS:USER:MCC:EPHOT:SET1',
+            'log.new_value': '7351',
+            'log.old_value': '7350',
+            'log.iocname': '%{[path]}-gateway',  # unset because no path
+        },
+        id='gateway_caputlog',
     ),
 
 ]
