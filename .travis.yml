@@ -17,7 +17,7 @@ script:
 
   # ... but also wait for logstash to get started. It's slow.
   - until docker logs $(docker ps -q) |grep "Starting tcp input"; do sleep 1; done
-  - echo "logstash appears ready."; sleep 5
+  - echo "logstash appears ready."; sleep 15
 
   - timeout 100 make test
 
