@@ -4,7 +4,7 @@ services:
   - docker
 
 python: 
-  - 3.6
+  - 3.9
   
 script:
   - cd testing/
