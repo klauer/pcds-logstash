@@ -31,8 +31,7 @@ run: build_config
 		-p $(TEST_OUTPUT_HOST):$(UDP_PORT_RANGE):$(UDP_PORT_RANGE)/udp \
 		-p $(TEST_OUTPUT_HOST):$(PYTHON_PORT):$(PYTHON_PORT)/tcp \
 		\
-		docker.elastic.co/logstash/logstash:7.7.1
-	# TODO:
+		docker.elastic.co/logstash/logstash:7.17.7
 
 test:
 	python -m pytest $(PYTEST_FLAGS) logstash_test.py
