@@ -22,7 +22,7 @@ for message_type, info in logstash_test.message_types.items():
     with open(path, 'wt') as f:
         print(config, file=f)
 
-    elastic_config = config_path / message_type / 'output-elasticsearch.conf'
-    if elastic_config.exists():
-        print('  - Removing elasticsearch config for testing')
+    elastic_configs = list((config_path / message_type).glob('*output-elasticsearch*.conf'))
+    for elastic_config in elastic_configs:
+        print(f'  - Removing elasticsearch config for testing: {elastic_config}')
         elastic_config.unlink()
