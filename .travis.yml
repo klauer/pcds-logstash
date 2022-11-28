@@ -22,5 +22,5 @@ script:
   - timeout 100 make test
 
 after_failure:
-  - tail -n 100 testing/logs/*.log
+  - tail -n 100 "${TRAVIS_BUILD_DIR}/testing/logs/*.log"
   - docker logs $(docker ps -q)

@@ -3,6 +3,7 @@ PYTEST_FLAGS ?= -vv
 PCDS_LOGSTASH_ROOT ?= ${PWD}/..
 TEST_CONFIG_PATH = ${PWD}/.test_config/
 TEST_OVERRIDE_PATH = ${PWD}/config_for_tests/
+PYTEST_TIMEOUT ?= "5.0"
 
 TEST_OUTPUT_HOST ?= 127.0.0.1
 TEST_OUTPUT_PORT_RANGE ?= 17771-17776
@@ -37,6 +38,7 @@ run: build_config
 		docker.elastic.co/logstash/logstash:7.17.7
 
 test:
-	python -m pytest $(PYTEST_FLAGS) logstash_test.py
+	PYTEST_TIMEOUT=$(PYTEST_TIMEOUT) \
+		 python -m pytest $(PYTEST_FLAGS) logstash_test.py
 
 .PHONY: run test build_config
