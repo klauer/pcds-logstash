@@ -20,6 +20,7 @@ build_config:
 	python build_config.py "${TEST_CONFIG_PATH}" "${TEST_OVERRIDE_PATH}"
 	find ${TEST_CONFIG_PATH}
 	mkdir -p logs
+	chmod 0777 logs
 
 run: build_config
 	docker run --rm $(DOCKER_RUN_FLAGS) -t \
