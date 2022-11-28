@@ -13,6 +13,7 @@ try:
 except ImportError:
     pcdsutils = None
 
+import conftest
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +65,7 @@ def send_message(port, protocol, message):
 
 def send_by_type(message_type, message):
     """Send a message given the message type and message itself."""
-    info = message_types[message_type]
+    info = conftest.message_types[message_type]
     port = info['port']
     protocol = info['protocol']
     return send_message(port, protocol, message)
@@ -114,35 +115,6 @@ def check_vs_expected(expected, received):
     if errors:
         raise ValueError('\n' + '\n\n'.join(errors))
 
-
-message_types = {
-    'epics_errlog': dict(
-        protocol='tcp',
-        port=7004,
-        receive_port=17771,
-    ),
-    'caputlog': dict(
-        protocol='tcp',
-        port=7011,
-        receive_port=17772,
-    ),
-    'plc': dict(
-        protocol='udp',
-        # port=54321,  # <-- NOTE: this goes to the UDP tee process (on prod)
-        port=54322,  # <-- NOTE: this goes directly to logstash
-        receive_port=17773,
-    ),
-    'python_json_tcp': dict(
-        protocol='tcp',
-        port=54320,
-        receive_port=17774,
-    ),
-    'python_json_udp': dict(
-        protocol='udp',
-        port=54320,
-        receive_port=17774,
-    ),
-}
 
 tests = [
     # -- error log tests --
@@ -261,6 +233,22 @@ tests = [
         id='plc_vacuum',
     ),
 
+    # -- gateway caputlog tests --
+    pytest.param(
+        'gateway_caputlog',
+        'Nov 02 23:20:46 physics@opi15 XCS:USER:MCC:EPHOT:SET1 7351 old=7350',
+        {
+            'log.timestamp': '2022-11-02T23:20:46.000Z',  # 'Nov 02 23:20:46',
+            'log.client_username': 'physics',
+            'log.client_hostname': 'opi15',
+            'log.pvname': 'XCS:USER:MCC:EPHOT:SET1',
+            'log.new_value': '7351',
+            'log.old_value': '7350',
+            'log.iocname': '%{[path]}-gateway',  # unset because no path
+        },
+        id='gateway_caputlog',
+    ),
+
 ]
 
 fail_tests = [
@@ -290,7 +278,7 @@ def check_timestamp(result):
 
 @pytest.mark.parametrize('message_type, message, expected', tests)
 def test_all(message_type, message, expected):
-    info = message_types[message_type]
+    info = conftest.message_types[message_type]
     result = send_and_receive(info['port'], info['receive_port'],
                               info['protocol'], message)
     check_vs_expected(expected, result)
@@ -300,7 +288,7 @@ def test_all(message_type, message, expected):
 @pytest.mark.parametrize('message_type, message, expected, exc_class',
                          fail_tests)
 def test_should_fail(message_type, message, expected, exc_class):
-    info = message_types[message_type]
+    info = conftest.message_types[message_type]
     result = send_and_receive(info['port'], info['receive_port'],
                               info['protocol'], message)
 
@@ -318,7 +306,7 @@ def test_python_logging(python_message_type):
     if pcdsutils is None:
         pytest.skip('pcdsutils unavailable')
 
-    info = message_types[python_message_type]
+    info = conftest.message_types[python_message_type]
     pcdsutils.log.configure_pcds_logging(
         log_host=LOG_HOST,
         log_port=info['port'],
@@ -339,6 +327,7 @@ def test_python_logging(python_message_type):
     check_timestamp(result)
 
 
+@pytest.mark.timeout(30)
 @pytest.mark.parametrize(
     'python_message_type',
     [pytest.param('python_json_tcp'),
@@ -349,7 +338,7 @@ def test_python_logging_exceptions(python_message_type):
     if pcdsutils is None:
         pytest.skip('pcdsutils unavailable')
 
-    info = message_types[python_message_type]
+    info = conftest.message_types[python_message_type]
     pcdsutils.log.configure_pcds_logging(
         log_host=LOG_HOST,
         log_port=info['port'],

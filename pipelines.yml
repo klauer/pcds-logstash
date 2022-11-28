@@ -15,3 +15,6 @@
 
 - pipeline.id: epics_caputlog
   path.config: "/etc/logstash/conf.d/caputlog/*.conf"
+
+- pipeline.id: gateway_caputlog
+  path.config: "/etc/logstash/conf.d/gateway_caputlog/*.conf"

@@ -84,10 +84,12 @@ pipeline.ordered: auto
 # Periodically check if the configuration has changed and reload the pipeline
 # This can also be triggered manually through the SIGHUP signal
 #
-# config.reload.automatic: false
+# (PCDS) This is useful on ctl-logdev01 to enable, but probably shouldn't be
+# enabled for production:
+# config.reload.automatic: true
 #
 # How often to check if the pipeline configuration has changed (in seconds)
-# Note that the unit value (s) is required. Values without a qualifier (e.g. 60)
+# Note that the unit value (s) is required. Values without a qualifier (e.g. 60) 
 # are treated as nanoseconds.
 # Setting the interval this way is not recommended and might change in later versions.
 #
@@ -96,7 +98,7 @@ pipeline.ordered: auto
 # Show fully compiled configuration as debug log message
 # NOTE: --log.level must be 'debug'
 #
-# config.debug: false
+# config.debug: true
 #
 # When enabled, process escaped characters such as \n and \" in strings in the
 # pipeline configuration files.
@@ -238,7 +240,7 @@ pipeline.ordered: auto
 #   * debug
 #   * trace
 #
-# log.level: info
+# log.level: debug
 path.logs: /var/log/logstash
 
 #
