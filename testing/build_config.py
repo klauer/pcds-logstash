@@ -3,12 +3,12 @@ import shutil
 import sys
 import string
 
-import logstash_test
+import conftest
 
 config_path = pathlib.Path(sys.argv[1])
 test_override_path = pathlib.Path(sys.argv[2])
 
-for message_type, info in logstash_test.message_types.items():
+for message_type, info in conftest.message_types.items():
     if message_type == "python_json_udp":
         continue
     if message_type == "python_json_tcp":
