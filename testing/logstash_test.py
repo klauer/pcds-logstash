@@ -360,6 +360,7 @@ def test_python_logging(python_message_type):
     check_timestamp(result)
 
 
+@pytest.mark.timeout(30)
 @pytest.mark.parametrize(
     'python_message_type',
     [pytest.param('python_json_tcp'),
