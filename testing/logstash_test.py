@@ -118,8 +118,8 @@ def check_vs_expected(expected, received):
 message_types = {
     'epics_errlog': dict(
         protocol='tcp',
-        port=7004,
-        receive_port=17771,
+        port=7004,            # <-- this is the port logstash expects errlog on
+        receive_port=17771,   # <-- this is the port we configure logstash to send us info
     ),
     'caputlog': dict(
         protocol='tcp',
@@ -141,6 +141,11 @@ message_types = {
         protocol='udp',
         port=54320,
         receive_port=17774,
+    ),
+    'gateway_caputlog': dict(
+        protocol='tcp',
+        port=17775,
+        receive_port=17776,
     ),
 }
 
@@ -261,6 +266,22 @@ tests = [
         id='plc_vacuum',
     ),
 
+    # -- gateway caputlog tests --
+    pytest.param(
+        'gateway_caputlog',
+        'Nov 02 23:20:46 physics@opi15 XCS:USER:MCC:EPHOT:SET1 7351 old=7350',
+        {
+            'log.timestamp': '2022-11-02T23:20:46.000Z',  # 'Nov 02 23:20:46',
+            'log.client_username': 'physics',
+            'log.client_hostname': 'opi15',
+            'log.pvname': 'XCS:USER:MCC:EPHOT:SET1',
+            'log.new_value': '7351',
+            'log.old_value': '7350',
+            'log.iocname': '%{[path]}-gateway',  # unset because no path
+        },
+        id='gateway_caputlog',
+    ),
+
 ]
 
 fail_tests = [
@@ -339,6 +360,7 @@ def test_python_logging(python_message_type):
     check_timestamp(result)
 
 
+@pytest.mark.timeout(30)
 @pytest.mark.parametrize(
     'python_message_type',
     [pytest.param('python_json_tcp'),

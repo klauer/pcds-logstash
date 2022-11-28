@@ -1,0 +1,43 @@
+version: "3.9"
+services:
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.17.7
+    environment:
+      MONITORING_ENABLED: "0"
+      LOG_LEVEL: "debug"
+    volumes:
+      - ./logs:/var/log/logstash
+      - ../pipelines.yml:/usr/share/logstash/config/pipelines.yml
+      - ./.test_config:/etc/logstash/conf.d
+    ports:
+      # Output port range - logstash sends info to Python through these
+      - 17771-17776:17771-17776/tcp
+      # ERRLOG
+      - 7004:7004/tcp
+      # caPutLog
+      - 7011:7011/tcp
+      # Gateway caPutLog (made up)
+      - 54330:54330/tcp
+      # UDP ports
+      - 54320-54329:54320-54329/udp
+      # Python TCP port
+      - 54320:54320/tcp
+    healthcheck:
+      test: curl --fail -XGET 'localhost:9600/_node/logging?pretty'
+      interval: 60s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
+  pytest:
+    image: python:3.9-bullseye
+    environment:
+      PYTEST_TIMEOUT: "5.0"
+      PYTEST_FLAGS: "-vv"
+      TEST_OUTPUT_HOST: "logstash"
+    depends_on:
+      logstash:
+        condition: service_healthy
+    volumes:
+      - ..:/pcds-logstash
+    command: |
+      bash /pcds-logstash/testing/run_python_tests.sh
