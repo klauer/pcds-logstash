@@ -37,8 +37,13 @@ run: build_config
 		\
 		docker.elastic.co/logstash/logstash:7.17.7
 
+compose-test: build_config
+	docker-compose up \
+			--abort-on-container-exit \
+			--exit-code-from pytest
+
 test:
 	PYTEST_TIMEOUT=$(PYTEST_TIMEOUT) \
 		 python -m pytest $(PYTEST_FLAGS) logstash_test.py
 
-.PHONY: run test build_config
+.PHONY: run test build_config compose-test

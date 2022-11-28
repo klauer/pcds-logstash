@@ -7,4 +7,4 @@ python:
   - 3.9
   
 script:
-  - bash testing/test_on_ci.sh
+  - cd testing && make compose-test
