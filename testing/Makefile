@@ -19,9 +19,10 @@ build_config:
 	cp -r ${PCDS_LOGSTASH_ROOT}/conf.d/ ${TEST_CONFIG_PATH}
 	python build_config.py "${TEST_CONFIG_PATH}" "${TEST_OVERRIDE_PATH}"
 	find ${TEST_CONFIG_PATH}
+	mkdir -p logs
+	chmod 0777 logs
 
 run: build_config
-	mkdir -p logs
 	docker run --rm $(DOCKER_RUN_FLAGS) -t \
 		\
 		-v ${PCDS_LOGSTASH_ROOT}/testing/logs:/var/log/logstash \
