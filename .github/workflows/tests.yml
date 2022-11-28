@@ -1,0 +1,13 @@
+name: Tests
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Run tests
+      run: |
+        set -vxeuo pipefail
+        cd testing
+        make compose-test
